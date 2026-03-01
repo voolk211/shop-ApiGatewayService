@@ -1,4 +1,4 @@
-package org.example.apigatewayservice.jwt;
+package org.example.apigatewayservice.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;

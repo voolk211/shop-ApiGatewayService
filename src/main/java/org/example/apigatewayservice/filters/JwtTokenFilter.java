@@ -1,9 +1,10 @@
-package org.example.apigatewayservice.jwt;
+package org.example.apigatewayservice.filters;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.example.apigatewayservice.exception.JwtAuthenticationException;
+import org.example.apigatewayservice.util.JwtUtil;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
