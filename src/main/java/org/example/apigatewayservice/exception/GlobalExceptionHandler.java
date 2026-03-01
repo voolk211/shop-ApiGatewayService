@@ -35,19 +35,19 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
 
         response.setStatusCode(status);
 
-         ErrorResponse errorResponse = new ErrorResponse(Instant.now(),
+        ErrorResponse errorResponse = new ErrorResponse(Instant.now(),
                 status.value(),
                 ex.getMessage(),
                 exchange.getRequest().getPath().value());
 
-         byte[] bytes;
-         try {
-             bytes = mapper.writeValueAsBytes(errorResponse);
-         } catch (JsonProcessingException e) {
-             bytes = new byte[0];
-         }
+        byte[] bytes;
+        try {
+            bytes = mapper.writeValueAsBytes(errorResponse);
+        } catch (JsonProcessingException e) {
+            bytes = new byte[0];
+        }
 
-         DataBuffer buffer = response.bufferFactory().wrap(bytes);
-         return response.writeWith(Mono.just(buffer));
+        DataBuffer buffer = response.bufferFactory().wrap(bytes);
+        return response.writeWith(Mono.just(buffer));
     }
 }
