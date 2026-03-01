@@ -10,9 +10,6 @@ import reactor.core.publisher.Mono;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
-
-//@RequiredArgsConstructor
-//@EnableWebSecurity
 @Configuration
 public class ApplicationConfig {
 

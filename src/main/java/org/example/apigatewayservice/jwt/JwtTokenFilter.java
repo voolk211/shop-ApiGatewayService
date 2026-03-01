@@ -3,6 +3,7 @@ package org.example.apigatewayservice.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import org.example.apigatewayservice.exception.JwtAuthenticationException;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -38,8 +39,9 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
         String authHeaders = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
         if (authHeaders == null || !authHeaders.startsWith("Bearer ")) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            throw new JwtAuthenticationException("Missing or invalid Authorization header");
+            //exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            //return exchange.getResponse().setComplete();
         }
 
         String token = authHeaders.substring(7);
@@ -80,8 +82,8 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
         } catch (JwtException e) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            throw new JwtAuthenticationException(e.getMessage());
         }
     }
+
 }
