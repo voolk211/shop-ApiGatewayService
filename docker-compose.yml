@@ -1,0 +1,134 @@
+version: "3.8"
+
+services:
+  user-service:
+    image: shop_userservice-user_service:latest
+    container_name: user-service
+    env_file: .env
+    depends_on:
+      - user-db
+      - redis
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=${USER_SERVICE_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${USER_SERVICE_USER}
+      - SPRING_DATASOURCE_PASSWORD=${USER_SERVICE_PASSWORD}
+      - SPRING_REDIS_HOST=${SPRING_REDIS_HOST}
+      - SERVICE_SECRET=${SERVICE_SECRET}
+      - SPRING_PROFILES_ACTIVE=docker
+      - USER_SERVICE_PORT=8081
+    networks:
+      - internal
+
+  user-db:
+    image: postgres:16
+    container_name: user-db
+    environment:
+      - POSTGRES_DB=${USER_SERVICE_DB}
+      - POSTGRES_USER=${USER_SERVICE_USER}
+      - POSTGRES_PASSWORD=${USER_SERVICE_PASSWORD}
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  auth-service:
+    image: authservice-auth_service:latest
+    container_name: auth-service
+    env_file: .env
+    depends_on:
+      - auth-db
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=${AUTH_SERVICE_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${AUTH_SERVICE_USER}
+      - SPRING_DATASOURCE_PASSWORD=${AUTH_SERVICE_PASSWORD}
+      - SERVICE_SECRET=${SERVICE_SECRET}
+      - SPRING_PROFILES_ACTIVE=docker
+      - AUTH_SERVICE_PORT=8082
+    networks:
+      - internal
+
+  auth-db:
+    image: postgres:16
+    container_name: auth-db
+    environment:
+      - POSTGRES_DB=${AUTH_SERVICE_DB}
+      - POSTGRES_USER=${AUTH_SERVICE_USER}
+      - POSTGRES_PASSWORD=${AUTH_SERVICE_PASSWORD}
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  order-service:
+    image: orderservice-order-service:latest
+    container_name: order-service
+    env_file: .env
+    depends_on:
+      - order-db
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=${ORDER_SERVICE_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${ORDER_SERVICE_USER}
+      - SPRING_DATASOURCE_PASSWORD=${ORDER_SERVICE_PASSWORD}
+      - SERVICE_SECRET=${SERVICE_SECRET}
+      - SPRING_PROFILES_ACTIVE=docker
+      - ORDER_SERVICE_PORT=8083
+    networks:
+      - internal
+
+  order-db:
+    image: postgres:16
+    container_name: order-db
+    environment:
+      - POSTGRES_DB=${ORDER_SERVICE_DB}
+      - POSTGRES_USER=${ORDER_SERVICE_USER}
+      - POSTGRES_PASSWORD=${ORDER_SERVICE_PASSWORD}
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    expose:
+      - "6379"
+    networks:
+      - internal
+
+  api-gateway:
+    image: api-gateway:latest
+    container_name: api-gateway
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - auth-service
+      - user-service
+      - order-service
+    environment:
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - ORDER_SERVICE_URL=${ORDER_SERVICE_URL}
+      - SERVICE_SECRET=${SERVICE_SECRET}
+      - SPRING_REDIS_HOST=${SPRING_REDIS_HOST}
+      - SPRING_REDIS_PORT=${SPRING_REDIS_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  user-db-data:
+  auth-db-data:
+  order-db-data:

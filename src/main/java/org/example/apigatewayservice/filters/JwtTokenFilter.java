@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.example.apigatewayservice.exception.JwtAuthenticationException;
 import org.example.apigatewayservice.util.JwtUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -23,6 +24,9 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
 
+    @Value("${internal.internal-secret}")
+    private String internalSecret;
+
     @Override
     public int getOrder() {
         return -1;
@@ -33,7 +37,20 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
 
         String path = exchange.getRequest().getPath().value();
 
-        if (path.startsWith("/api/auth/")) {
+        if (path.startsWith("/api/auth/login") ||
+                path.startsWith("/api/auth/register") ||
+                path.startsWith("/api/auth/refresh") ||
+                path.startsWith("/api/auth/validate") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/swagger")) {
+
+            if (path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui") || path.startsWith("/swagger")) {
+                ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                        .header("X-Internal-Auth", internalSecret)
+                        .build();
+                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            }
             return chain.filter(exchange);
         }
 
@@ -57,7 +74,7 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
     }
 
     private ServerWebExchange mutateRequest(ServerWebExchange exchange, Claims claims) {
-        Object userId = claims.get("userId");
+        String userId = claims.get("userId").toString();
 
         if (userId == null) {
             throw new JwtAuthenticationException("Missing userId claim");
@@ -81,11 +98,17 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
             roles = List.of();
         }
 
-        ServerHttpRequest mutatedRequest = exchange.getRequest()
-                .mutate()
-                .header("X-User-Id", userId.toString())
-                .header("X-Username", subject)
-                .header("X-Roles", String.join(",", roles))
+        ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                .headers(h -> {
+                    h.remove(HttpHeaders.AUTHORIZATION);
+                    h.remove("X-User-Id");
+                    h.remove("X-Username");
+                    h.remove("X-Roles");
+                    h.add("X-User-Id", userId);
+                    h.add("X-Username", subject);
+                    h.add("X-Roles", String.join(",", roles));
+                    h.add("X-Internal-Auth", internalSecret);
+                })
                 .build();
 
         return exchange.mutate().request(mutatedRequest).build();

@@ -1,9 +1,8 @@
 spring:
-  datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
   data:
     redis:
-      host: redis_docker
-      port: 6379
+      host: ${SPRING_REDIS_HOST:redis}
+      port: ${SPRING_REDIS_PORT:6379}
+
+internal:
+  internal-secret: ${INTERNAL_SECRET}
