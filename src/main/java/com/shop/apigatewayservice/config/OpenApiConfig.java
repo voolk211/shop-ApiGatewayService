@@ -1,4 +1,4 @@
-package org.example.apigatewayservice.config;
+package com.shop.apigatewayservice.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;

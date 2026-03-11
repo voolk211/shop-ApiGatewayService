@@ -1,4 +1,4 @@
-package org.example.apigatewayservice.config;
+package com.shop.apigatewayservice.config;
 
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.context.annotation.Bean;

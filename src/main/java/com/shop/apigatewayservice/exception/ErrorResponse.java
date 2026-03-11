@@ -1,4 +1,4 @@
-package org.example.apigatewayservice.exception;
+package com.shop.apigatewayservice.exception;
 
 import java.time.Instant;
 

@@ -102,6 +102,7 @@ services:
       - internal
 
   api-gateway:
+    build: .
     image: api-gateway:latest
     container_name: api-gateway
     env_file: .env

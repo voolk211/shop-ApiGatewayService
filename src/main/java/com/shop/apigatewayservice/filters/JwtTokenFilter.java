@@ -1,10 +1,10 @@
-package org.example.apigatewayservice.filters;
+package com.shop.apigatewayservice.filters;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
-import org.example.apigatewayservice.exception.JwtAuthenticationException;
-import org.example.apigatewayservice.util.JwtUtil;
+import com.shop.apigatewayservice.exception.JwtAuthenticationException;
+import com.shop.apigatewayservice.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -17,6 +17,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -26,6 +28,26 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
 
     @Value("${internal.internal-secret}")
     private String internalSecret;
+
+    private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/validate"
+    );
+
+    private static final Set<String> SWAGGER_PATHS = Set.of(
+            "/v3/api-docs",
+            "/swagger-ui",
+            "/swagger"
+    );
+
+    private static final Set<String> ACTUATOR_PATHS = Set.of(
+            "/actuator/health",
+            "/actuator/info",
+            "/actuator/metrics",
+            "/actuator/prometheus"
+    );
 
     @Override
     public int getOrder() {
@@ -37,15 +59,11 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
 
         String path = exchange.getRequest().getPath().value();
 
-        if (path.startsWith("/api/auth/login") ||
-                path.startsWith("/api/auth/register") ||
-                path.startsWith("/api/auth/refresh") ||
-                path.startsWith("/api/auth/validate") ||
-                path.startsWith("/v3/api-docs") ||
-                path.startsWith("/swagger-ui") ||
-                path.startsWith("/swagger")) {
+        if (isPathExcluded(path, PUBLIC_AUTH_PATHS) ||
+                isPathExcluded(path, SWAGGER_PATHS) ||
+                isPathExcluded(path, ACTUATOR_PATHS)) {
 
-            if (path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui") || path.startsWith("/swagger")) {
+            if (isPathExcluded(path, SWAGGER_PATHS)) {
                 ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                         .header("X-Internal-Auth", internalSecret)
                         .build();
@@ -74,14 +92,15 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
     }
 
     private ServerWebExchange mutateRequest(ServerWebExchange exchange, Claims claims) {
-        String userId = claims.get("userId").toString();
+        Object userIdObj = claims.get("userId");
 
-        if (userId == null) {
+        if (userIdObj == null) {
             throw new JwtAuthenticationException("Missing userId claim");
         }
 
-        String subject = claims.getSubject();
+        String userId = userIdObj.toString();
 
+        String subject = claims.getSubject();
         if (subject == null) {
             throw new JwtAuthenticationException("Missing subject claim");
         }
@@ -91,6 +110,7 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
 
         if (rolesObj instanceof List<?> list) {
             roles = list.stream()
+                    .filter(Objects::nonNull)
                     .map(Object::toString)
                     .toList();
         }
@@ -113,4 +133,9 @@ public class JwtTokenFilter implements GlobalFilter, Ordered {
 
         return exchange.mutate().request(mutatedRequest).build();
     }
+
+    private boolean isPathExcluded(String path, Set<String> prefixes){
+        return prefixes.stream().anyMatch(path::startsWith);
+    }
+
 }

@@ -1,7 +1,8 @@
-package org.example.apigatewayservice.exception;
+package com.shop.apigatewayservice.exception;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -14,9 +15,10 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 
 @Component
+@RequiredArgsConstructor
 public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
 
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
