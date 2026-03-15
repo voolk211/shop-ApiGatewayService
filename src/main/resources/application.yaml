@@ -62,6 +62,17 @@ spring:
                 redis-rate-limiter.burstCapacity: 50
                 key-resolver: "#{@ipKeyResolver}"
 
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://payment-service:8084}
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 50
+                key-resolver: "#{@ipKeyResolver}"
+
         - id: user-service-docs
           uri: ${USER_SERVICE_URL:http://user-service:8081}
           predicates:
@@ -83,6 +94,13 @@ spring:
           filters:
             - RewritePath=/v3/api-docs/order, /v3/api-docs
 
+        - id: payment-service-docs
+          uri: ${PAYMENT_SERVICE_URL:http://payment-service:8084}
+          predicates:
+            - Path=/v3/api-docs/payment
+          filters:
+            - RewritePath=/v3/api-docs/payment, /v3/api-docs
+
 security:
   jwt:
     secret: ${JWT_SECRET}
@@ -99,4 +117,6 @@ springdoc:
         url: /v3/api-docs/auth
       - name: order-service
         url: /v3/api-docs/order
+      - name: payment-service
+        url: /v3/api-docs/payment
     path: /swagger-ui.html
