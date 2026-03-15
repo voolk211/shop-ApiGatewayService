@@ -69,6 +69,7 @@ services:
     env_file: .env
     depends_on:
       - order-db
+      - kafka
     ports:
       - "8083:8083"
     environment:
@@ -78,6 +79,7 @@ services:
       - SERVICE_SECRET=${SERVICE_SECRET}
       - SPRING_PROFILES_ACTIVE=docker
       - ORDER_SERVICE_PORT=8083
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     networks:
       - internal
 
@@ -90,6 +92,66 @@ services:
       - POSTGRES_PASSWORD=${ORDER_SERVICE_PASSWORD}
     volumes:
       - order-db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  payment-service:
+    image: paymentservice-payment-service:latest
+    container_name: paymentService
+    env_file:
+      - .env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8084:8084"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/payments
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - EXTERNAL_API_URL=https://www.randomnumberapi.com/api/v1.0
+      - SPRING_PROFILES_ACTIVE=docker
+      - PAYMENT_SERVICE_PORT=8084
+    networks:
+      - internal
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - internal
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - internal
 
@@ -113,10 +175,12 @@ services:
       - auth-service
       - user-service
       - order-service
+      - payment-service
     environment:
       - USER_SERVICE_URL=${USER_SERVICE_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
       - ORDER_SERVICE_URL=${ORDER_SERVICE_URL}
+      - PAYMENT_SERVICE_URL=${PAYMENT_SERVICE_URL}
       - SERVICE_SECRET=${SERVICE_SECRET}
       - SPRING_REDIS_HOST=${SPRING_REDIS_HOST}
       - SPRING_REDIS_PORT=${SPRING_REDIS_PORT}
@@ -133,3 +197,4 @@ volumes:
   user-db-data:
   auth-db-data:
   order-db-data:
+  mongodb_data:
