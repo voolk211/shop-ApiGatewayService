@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   user-service:
-    image: shop_userservice-user_service:latest
+    image: user_service:latest
     container_name: user-service
     env_file: .env
     depends_on:
@@ -34,7 +34,7 @@ services:
       - internal
 
   auth-service:
-    image: authservice-auth_service:latest
+    image: auth_service:latest
     container_name: auth-service
     env_file: .env
     depends_on:
@@ -64,7 +64,7 @@ services:
       - internal
 
   order-service:
-    image: orderservice-order-service:latest
+    image: order-service:latest
     container_name: order-service
     env_file: .env
     depends_on:
@@ -96,7 +96,7 @@ services:
       - internal
 
   payment-service:
-    image: paymentservice-payment-service:latest
+    image: payment-service:latest
     container_name: paymentService
     env_file:
       - .env
@@ -108,6 +108,7 @@ services:
     ports:
       - "8084:8084"
     environment:
+      - INTERNAL_SECRET=${INTERNAL_SECRET}
       - MONGODB_URI=mongodb://mongodb:27017/payments
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EXTERNAL_API_URL=https://www.randomnumberapi.com/api/v1.0
