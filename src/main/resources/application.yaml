@@ -1,8 +1,7 @@
 server:
-  port: 8080
+  port: ${APIGATEWAY_SERVICE_PORT}
 
 spring:
-
   application:
     name: api-gateway
 
@@ -107,6 +106,22 @@ security:
 
 internal:
   internal-secret: ${INTERNAL_SECRET}
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health
 
 springdoc:
   swagger-ui:
